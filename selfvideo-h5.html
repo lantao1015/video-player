@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>h5播放器</title>
+ 	<meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
+ 	<style>
+		html,body{
+			height:100%;
+			width:100%;
+			position: relative;
+			font-size:50px;
+			
+		}
+ 		html,body,div{
+ 			margin:0;
+ 			padding:0;
+
+ 		}
+ 		.video-box{
+ 			position: relative;
+ 		}
+
+ 		.video-box .play{
+ 			position: absolute;
+ 			transform: translate(-50%, -50%);
+ 			left: 50%;
+ 			top: 50%;
+ 			cursor: pointer;
+ 			height: 0.85rem;
+			width: 0.85rem;
+			font-size: 3em;
+			background-color: rgba(43,51,63,.7);
+			border-radius: 50%;
+			z-index:9999999999999999999;
+ 		}
+ 		.video-box .triangle, .video-box .pause{
+			height: 0.47rem;
+			width: 0.47rem;
+			position: absolute;
+ 			transform: translate(-50%, -50%);
+ 			left: 55%;
+ 			top: 50%;
+			background-size: 100% 100%;
+		}
+		.video-box .triangle{
+			background-image: url('./svg/play.svg');
+		 }
+		.video-box .play .pause{
+			height: 0.65rem;
+			width: 0.65rem;
+			background-image: url('./svg/pause.svg');
+			display: none;
+			left:50%;
+		}
+		.video-box .controls{
+			height:0.7rem;
+			background-color: rgba(43,51,63,.7);
+			position: absolute;
+			width:100%;
+			bottom:0;
+			z-index:99999999999999999999999;
+			display: block;
+			opacity: 1;
+		}
+		#video-tag{
+			display: block;
+		}
+		.playtime, .alltime,.fullscreen,.progress{
+			color:#fff;
+			font-size:0.2rem;
+			position: absolute;
+			top:50%;
+			transform: translate(0, -50%);
+		}
+		.move,.loaded{
+			background-color: #3578df;
+			/*width:100px;*/
+			position: absolute;
+			left:0;
+			height:0.02rem;
+		}
+		.loaded{
+			background: #fff;
+		}
+		.playtime{
+			left:0.22rem;
+			width:0.4rem;
+		}
+		.alltime{
+			right:0.85rem;
+		}
+		.fullscreen{
+			/*border:1px solid #fff;*/
+			height:0.3rem;
+			width:0.3rem;
+			right:0.3rem;
+		}
+		.full{
+			background-image: url('./svg/full.svg');
+			background-size: 100% 100%;
+		}
+		.nofull{
+			background-image: url('./svg/nfull.svg');
+			background-size: 100% 100%;
+		}
+		.progress{
+			width:64.5333333%;
+			height:0.02rem;
+			background-color: #666;
+			left:0.98rem;
+			/*cursor: pointer;*/
+		}
+		.rotate{
+			transition: 1s;
+			transform:rotateZ(90deg);
+			/*position: fixed;*/
+			left:0;
+			top:0;
+			right:0;
+			bottom:0;
+		}
+		video:-webkit-full-screen{
+			display: none!important;
+		}
+		video::-webkit-media-controls-enclosure {
+	    	display: none !important;
+		}
+		video::-webkit-media-controls-overlay-play-button{
+			display:none!important;
+		}
+		.fade{
+			opacity: 0;
+			transition: 1s;
+		}
+		.move .probtn{
+			position: absolute;
+			width:0.3rem;
+			height:0.3rem;
+			border-radius:50%;
+			background: #fff;
+			right:-0.3rem;
+			top:50%;
+			transform: translate(0, -50%);
+			display: none;
+			z-index:999;
+		}
+		.fullprogress{
+			position: absolute;
+			width:100%;
+			bottom:0;
+			left:0;
+			height:0.04rem;
+			background-color: #222;
+			z-index: 999999999999999999999999999;
+			display: none;
+		}
+		.fullprogress .move{
+			height: 0.04rem;
+		}
+		*{-webkit-tap-highlight-color:transparent;}
+		/* :-webkit-full-screen{
+			z-index:0;
+		}
+		video:-webkit-full-screen{
+			opacity: 0;
+		} */
+ 	</style>
+	<!-- https://test-aopsmsg.pingan.com.cn:8020/group2/M00/00/04/HgQUYlpdcIOAZLDOAS85ppA-Z_c473.mp4 -->
+	<!-- ./video/fun.mp4 -->
+	<style>
+		p{margin:0;padding:0;}
+		.advertisement{
+			padding:0.3rem;
+			overflow: hidden;
+			position: relative;
+			
+		}
+		.advertisement img{
+			width:1.2rem;
+			height:1.22rem;
+			float:left;
+		}
+		.ad-interval-bar{
+			height:0.16rem;
+			background: #f6f7f8;
+		}
+		.ad-title{
+			font-size:0.32rem;
+			color:#222222;
+			line-height:0.32rem;
+		}
+		.ad-desc{
+			font-size:0.28rem;
+			color:#666666;
+			margin:0.18rem 0;
+		}
+		.ad-word{
+			padding-left: 0.33rem;
+			float: left;
+		}
+		.advertisement .arror{
+			width:0.15rem;
+			height:0.26rem;
+			position: absolute;
+			top:50%;
+			right:0.3rem;
+			transform: translate(0,-50%)
+		}
+		
+		.ad-bottom{
+		}
+		.ad-bottom p{
+			font-size:0.24rem;
+			color:#f8a700;
+			float:left;
+		}
+		.ad-bottom p:last-child{
+			color:#a5a5a5;
+		}
+	</style>
+</head>
+<body>
+	<div class="video-box">
+		<video id="video-tag"  webkit-playsinline="" playsinlin="" x5-playsinline=""  controls="false" src="./video/fun.mp4">
+			<!-- <source  type="video/mp4"></source> -->
+		</video>
+		<div class="play">
+			<div class="triangle"></div>
+			<div class="pause"></div>
+		</div>
+
+		<div class="controls">
+			<div class="playtime">
+				00:00
+			</div>
+			<div class="progress">
+				<div class="move">
+					<div class="probtn"></div>
+				</div>
+				<div class="loaded"></div>
+				
+			</div>
+			
+			<div class="alltime">
+					00:00
+			</div>
+			<div class="fullscreen full">
+
+			</div>
+		</div>
+		<div class="fullprogress">
+			<div class="move"></div>
+			<div class="loaded"></div>
+		</div>
+	</div>
+	<div class="ad-interval-bar"></div>
+	<div class="advertisement">
+		<img src="./images/guanggao.png">
+		<img class="arror" src="./images/arror.png">
+		<div class="ad-word">
+				
+			<p class="ad-title"></p>
+			<p class="ad-desc">
+			</p>
+			<div class="ad-bottom">
+				<p class="num"></p>
+				<p class="string"></p>
+			</div>
+		</div>
+	</div>
+	<div class="ad-interval-bar"></div>
+
+	<script src="./jquery-3.3.1.min.js"></script>
+	<script>
+		$(function(){
+			function getFormatTime(time) {
+	        var time = time || 0;
+
+	        var h = parseInt(time/3600),
+	            m = parseInt(time%3600/60),
+	            s = parseInt(time%60);
+	        h = h < 10 ? "0"+h : h;
+	        m = m < 10 ? "0"+m : m;
+	        s = s < 10 ? "0"+s : s;
+					if(h*1==0){
+						return m+":"+s;
+					}
+	        return h+":"+m+":"+s;
+
+	    }
+			var video = document.getElementById('video-tag');
+			var con = document.querySelector('.controls');
+			video.style.width = window.innerWidth + 'px';
+			video.controls = false;
+			// video.style.display = 'block';
+
+			//当视频可播放的时候
+	    	video.oncanplay = function(){
+				document.querySelector('.alltime').innerHTML = getFormatTime(video.duration);
+			}
+			// $('.controls').css('display','block');
+      //
+			$('.play').on('click', function(e){
+				if(video.paused) {
+
+            	video.play();
+				$('.play').css('display','none')
+				$('.pause').css('display', 'block')
+				$('.triangle').css('display','none')
+				$('.probtn').css('display','block')
+				$('.fullprogress').css('display','block')
+				con.style.display = 'none';
+        } else {
+           		video.pause();
+				$('.triangle').css('display','block')
+				$('.pause').css('display', 'none')
+        }
+				e.stopPropagation();
+			});
+
+			$('.video-box').on('click',function(e){console.log(124)
+				e.stopPropagation(); 
+					if(e.target.className == 'controls' || e.target.className == 'fullscreen') return;
+					if(con.style.display == 'none'){
+						con.style.display = 'block';
+						$('.play').css('display','block')
+						$('.fullprogress').css('display','none')
+						// $('.triangle').css('display','none')
+						// $('.pause').css('display', 'block')
+					}else if(con.style.display == 'block'){
+						con.style.display = 'none';
+						$('.play').css('display','none')
+						$('.fullprogress').css('display','block');
+						
+						// $('.triangle').css('display','none')
+						// $('.pause').css('display', 'block')
+							// $('.triangle').css('display','block')
+					}
+					console.log(124)
+
+			});
+			var full = 1;
+			$('.fullscreen').on('click', function(e){
+			// 	$('#video-tag').remove();
+			// $('.video-box').css('height','100%');
+				this.classList.toggle('nofull');
+				if(full == 1){
+					video.webkitRequestFullScreen();
+					$('.progress').css('width','80%');
+					full = 0;
+				}else{
+					document.webkitExitFullscreen();
+					$('.progress').css('width','64.53%');
+					full = 1;
+				}
+				// e.stopPropagation(); 
+				
+
+			})
+			var move = document.querySelectorAll('.move');
+			
+			//进度条
+			video.ontimeupdate = function(){
+				var currTime = this.currentTime,    //当前播放时间
+					duration = this.duration;       // 视频总时长
+				//百分比
+				var pre = currTime / duration * 100 + "%";
+				//显示进度条
+				move[0].style.width = pre;
+				move[1].style.width = pre;
+				
+				//显示当前播放进度时间
+				$('.playtime' ).html(getFormatTime(currTime));
+			};
+			// console.log(video.buffered.start(0),video.buffered.end(0))
+			
+			$('.progress').on('click' ,function(e){
+				var event = e || window.event;
+				$('.probtn').css('display', 'block')
+				
+				video['currentTime'] = (event.offsetX / this.offsetWidth) *video.duration;
+						// var pre = video.currentTime / video.duration * 100 + "%";
+						console.log(video.currentTime)
+						// $('.move').css('width',pre)
+						console.log(123)
+					e.stopPropagation(); 
+						
+			});
+			video.onloadedmetadata = function(){
+
+			}
+			//视频初始化
+			video.onended = function(){
+					//切换播放按钮状态
+					$('.play').css('display','block')
+					$('.triangle').css('display','block')
+					$('.pause').css('display', 'none')
+					con.style.display = 'block';
+					//进度条为0
+					move[0].style.width = 0;
+					move[1].style.width = 0;
+					//还原当前播放时间
+					$('.playtime' ).html(getFormatTime());
+					//视频恢复到播放开始状态
+					this.currentTime = 0;
+					$('.probtn').css('display', 'none')
+			};
+		});
+	</script>
+	<script>
+		$('.ad-title').html('驾驶信用');
+		debugger
+		$('.ad-desc').html('测驾驶信用分，领专属权益');
+		$('.ad-bottom').find('.num').html('165778');
+		$('.ad-bottom').find('.string').html('人在使用');
+
+	</script>
+</body>
+</html>
